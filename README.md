@@ -14,18 +14,21 @@ Add `--zap` to the uninstall command to also delete `~/.config/otty`.
 
 ## First launch
 
-otty is not notarized by Apple, so macOS blocks it the first time you open it.
-To allow it, do one of these once:
+otty opens right after install, nothing else is needed.
 
-1. Open otty, then go to **System Settings → Privacy & Security** and click
-   **Open Anyway**.
-2. Run:
+Why the cask does extra work here: otty is not notarized by Apple. macOS puts
+a "quarantine" mark on every downloaded app, and for an app that is not
+notarized it then refuses to start it with the message "otty is damaged and
+can't be opened". The app is not damaged, and **Open Anyway** in System
+Settings does not appear for this message.
 
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/otty.app
-   ```
+So after every install and upgrade the cask removes the mark with:
 
-On macOS 15 and later, right-click → Open no longer skips this check.
+```sh
+xattr -dr com.apple.quarantine /Applications/otty.app
+```
+
+If you installed otty from the DMG by hand, run this command yourself once.
 
 ## How the cask is updated
 

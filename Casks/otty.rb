@@ -19,13 +19,25 @@ cask "otty" do
 
   app "otty.app"
 
+  # otty is not notarized by Apple. macOS reports such apps as "damaged"
+  # while they carry the quarantine mark, so the mark is removed here.
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args:         ["-dr", "com.apple.quarantine", "#{appdir}/otty.app"],
+                   print_stderr: false
+  end
+
   zap trash: "~/.config/otty"
 
   caveats <<~EOS
-    otty is not notarized by Apple, so macOS blocks its first launch.
-    To allow it, do one of these:
-      1. Open otty, then go to System Settings → Privacy & Security
-         and click "Open Anyway".
-      2. Run: xattr -dr com.apple.quarantine "#{appdir}/otty.app"
+    otty is not notarized by Apple. macOS marks every downloaded app with
+    a "quarantine" flag, and for an app that is not notarized it then
+    refuses to start it with the message "otty is damaged and can't be
+    opened". The app is not damaged.
+
+    So that otty opens normally, this cask has removed the flag:
+      xattr -dr com.apple.quarantine "#{appdir}/otty.app"
+
+    It does this again after every `brew upgrade --cask otty`.
   EOS
 end
