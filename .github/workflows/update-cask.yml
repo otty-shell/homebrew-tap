@@ -1,0 +1,87 @@
+name: Update otty cask
+
+# Checks the latest published otty release and rewrites Casks/otty.rb
+# when it is newer than the cask. Drafts and prereleases are skipped,
+# because GitHub does not report them as the latest release.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: Update cask
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tap
+        uses: actions/checkout@v4
+
+      - name: Find latest otty release
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          tag="$(gh release view -R otty-shell/otty --json tagName -q .tagName)"
+          latest="${tag#v}"
+          current="$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/otty.rb)"
+
+          echo "Cask version: ${current}, latest release: ${latest}"
+
+          if [[ "${latest}" == "${current}" ]]; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${latest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download DMGs
+        if: steps.release.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: gh release download "${TAG}" -R otty-shell/otty -p '*-apple-darwin.dmg' -D dmg
+
+      - name: Write cask
+        if: steps.release.outputs.changed == 'true'
+        shell: bash
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          arm_dmg="dmg/otty-${VERSION}-aarch64-apple-darwin.dmg"
+          intel_dmg="dmg/otty-${VERSION}-x86_64-apple-darwin.dmg"
+
+          for dmg in "${arm_dmg}" "${intel_dmg}"; do
+            if [[ ! -f "${dmg}" ]]; then
+              echo "Release has no ${dmg#dmg/}. Found:" >&2
+              ls dmg >&2
+              exit 1
+            fi
+          done
+
+          arm_sha256="$(sha256sum "${arm_dmg}" | cut -d' ' -f1)"
+          intel_sha256="$(sha256sum "${intel_dmg}" | cut -d' ' -f1)"
+
+          bash scripts/write-cask.sh "${VERSION}" "${arm_sha256}" "${intel_sha256}"
+
+      - name: Commit and push
+        if: steps.release.outputs.changed == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add Casks/otty.rb
+          git commit -m "otty ${VERSION}"
+          git push

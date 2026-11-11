@@ -1,0 +1,11 @@
+# DMG files downloaded to compute checksums
+dmg/
+*.dmg
+
+# macOS
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+*.swp
