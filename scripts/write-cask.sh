@@ -35,8 +35,8 @@ cask "otty" do
          intel: "${INTEL_SHA256}"
 
   url "https://github.com/otty-shell/otty/releases/download/v#{version}/otty-#{version}-#{arch}-apple-darwin.dmg"
-  name "otty"
-  desc "Terminal emulator"
+  name "OTTY"
+  desc "Terminal-centric workspace for development and operations"
   homepage "https://github.com/otty-shell/otty"
 
   livecheck do
@@ -46,13 +46,13 @@ cask "otty" do
 
   depends_on macos: ">= :big_sur"
 
-  app "otty.app"
+  app "OTTY.app"
 
   # otty is not notarized by Apple. macOS reports such apps as "damaged"
   # while they carry the quarantine mark, so the mark is removed here.
   postflight do
     system_command "/usr/bin/xattr",
-                   args:         ["-dr", "com.apple.quarantine", "#{appdir}/otty.app"],
+                   args:         ["-dr", "com.apple.quarantine", "#{appdir}/OTTY.app"],
                    print_stderr: false
   end
 
@@ -65,7 +65,7 @@ cask "otty" do
     opened". The app is not damaged.
 
     So that otty opens normally, this cask has removed the flag:
-      xattr -dr com.apple.quarantine "#{appdir}/otty.app"
+      xattr -dr com.apple.quarantine "#{appdir}/OTTY.app"
 
     It does this again after every \`brew upgrade --cask otty\`.
   EOS
